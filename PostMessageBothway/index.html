@@ -1,0 +1,79 @@
+<!--
+ * @Author: your name
+ * @Date: 2021-10-17 18:09:20
+ * @LastEditTime: 2021-10-17 19:38:36
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: /PostMessage/index.html
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IframeContainer</title>
+</head>
+
+<body>
+    <div class="container" id="receiverPage">
+        <button class="btn" onclick="link()">和子页面建立通信</button>
+        <iframe class="iframePage" id="sonPage" src="http://127.0.0.1:5500/iframePage.html" frameborder="0"></iframe>
+        <div class="receiverLabel" id="receiverLabel"></div>
+    </div>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        .container {
+            width: 100vw;
+            height: 100vh;
+            background-color: gainsboro;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .iframePage {
+            width: 80%;
+            height: 80%;
+        }
+        .btn {
+            flex-shrink: 0;
+            margin: 20px 0 auto;
+            width: 80%;
+            height: 50px;
+        }
+        .receiverLabel {
+            width: 80%;
+            height: 20%;
+            background-color: goldenrod;
+            color: black;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+    <script>
+        function link () {
+            let sonPageEle = document.getElementById('sonPage').contentWindow
+            console.log('sonPageEle', sonPageEle)
+            sonPageEle.postMessage('建立通信', '*')
+        }
+        window.onload = function() {
+            let receiverLabelEle = document.getElementById('receiverLabel');
+            console.log('receiverLabelEle', receiverLabelEle)
+            // 监听 message 事件
+            window.addEventListener('message', function (e) {  
+                console.log('父页面接收 - e', e)
+                let data = e.data
+                let type = data.type
+                let value = data.value
+                console.log('type', type)
+                console.log('value', value)
+                
+                receiverLabelEle.innerHTML = 'received：' + value
+            });
+        }
+    </script>
+</body>
+</html>
