@@ -1,7 +1,7 @@
 <!--
  * @Author: your name
  * @Date: 2021-10-17 18:12:48
- * @LastEditTime: 2021-10-17 20:01:20
+ * @LastEditTime: 2021-10-18 17:37:24
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /PostMessage/iframePage.html
@@ -22,8 +22,23 @@
         <button class="btn" onclick="sendDate()">sendDate</button>
         <button class="btn" onclick="sendArray()">sendArray</button>
         <button class="btn" onclick="sendObj()">sendObj</button>
-        <!-- <input type ="file" >
-        <button class="btn" onclick="sendFile()">sendFile</button> -->
+        
+        <!-- 文件选择器 -->
+        <input
+          id="fileItem"
+          type ="file" 
+          style="display:none" 
+          multiple 
+          onchange="handleFiles(this.files)" 
+        >
+        <button class="btn1" onclick="selectFileClick()">Select some files</button>
+        <button class="btn2" onclick="sendFile()">sendFile</button>
+
+        <!-- <input type="file" id="fileElem" multiple accept="image/*" class="visually-hidden">
+        <label for="fileElem">Select some files</label> -->
+
+        <!-- 文件选择器2 -->
+        <div id="dropbox">拖入文件</div>
     </div>
     <style>
         * {
@@ -51,25 +66,74 @@
             width: 100px;
             height: 50px;
         }
+
+        #fileItem {
+            margin: 10px auto;
+        }
+        .btn1 {
+            margin-top: 30px;
+            width: 100px;
+            height: 40px;
+        }
+        .btn2 {
+            margin: 10px auto;
+            width: 100px;
+            height: 40px;
+        }
+        
+        #dropbox {
+            width: 100px;
+            height: 100px;
+            margin-top: 20px;
+            background-color: aquamarine;
+            line-height: 100px;
+            text-align: center;
+            color: thistle;
+        }
+
+        /* .visually-hidden {
+            position: absolute !important;
+            height: 1px;
+            width: 1px;
+            overflow: hidden;
+            clip: rect(1px, 1px, 1px, 1px);
+        } */
+        /* Separate rule for compatibility, :focus-within is required on modern Firefox and Chrome */
+        /* input.visually-hidden:focus + label {
+            outline: thin dotted;
+        }
+        input.visually-hidden:focus-within + label {
+            outline: thin dotted;
+        } */
     </style>
     <script>
         // 创建一个变量, 存储父级对象
         let parentEvent = null
 
+        // *************************加载完成*************************
         window.onload = function() {
             window.addEventListener('message', function (e) {  
-                console.log('子页面接收 - e', e)
+                console.log('子页面接收链接信息 - e', e)
                 // 拿到父级对象
                 parentEvent = e
             });
+
+
+            // 绑定文件拖拽事件
+            let dropbox = document.getElementById("dropbox")
+            dropbox.addEventListener("dragenter", dragenter, false)
+            dropbox.addEventListener("dragover", dragover, false)
+            dropbox.addEventListener("drop", drop, false)
         }
 
+
+        // *************************发送交互*************************
         function send (obj) {
             // 不跨域的写法
             // let sendRef =  window.parent
             // 跨域：利用父级对象向父页面发送消息  source: 父级窗口对象  origin: 父级地址
             let sendRef = parentEvent.source
-            console.log('sendRef', sendRef)
+            console.log('子页面发送 - sendRef', sendRef)
             sendRef.postMessage(obj, parentEvent.origin)
         }
         function sendText () {
@@ -103,6 +167,108 @@
                     key3: new Date()
                 }
             })
+        }
+
+
+        // *************************文件选择交互*************************
+        function selectFileClick () {
+            const fileItem = document.getElementById("fileItem")
+            // console.log('fileItem', fileItem)
+            // 触发文件选择事件
+            if (fileItem) {
+                fileItem.click()
+            }
+        }
+        function handleFiles (files) {
+            console.log('files', files)
+            // optional code for multiples approximation
+            const aMultiples = ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+            for (let index = 0; index < files.length; index++) {
+                const f = files[index]
+                let nBytes = f.size
+                let sOutput = nBytes + " bytes";
+                for (nMultiple = 0, nApprox = nBytes / 1024;  nApprox > 1;  nApprox /= 1024, nMultiple++) {
+                    sOutput = nApprox.toFixed(3) + " " + aMultiples[nMultiple] + " (" + nBytes + " bytes)";
+                    // console.log('--- nMultiple', nMultiple)
+                    // console.log('--- sOutput', sOutput)
+                }
+                console.log('name: ' + f.name + '\nsize: ', sOutput)
+
+
+                // 回显缩略图
+                var imageType = /^image\//;
+                if (!imageType.test(f.type)) {
+                    continue;
+                }
+                var img = document.createElement("img")
+                img.classList.add("obj");
+                img.file = f;
+                img.style.width = '100px'
+                img.style.height = '100px'
+                console.log('img', img)
+                let preview = document.getElementById("dropbox")
+                preview.appendChild(img); // 假设"preview"就是用来显示内容的div
+                // 创建FileReader来处理异步的图片加载并把他赋给img元素
+                var reader = new FileReader();
+                reader.onload = (function(aImg) { 
+                    return function(e) { aImg.src = e.target.result; }; 
+                })(img);
+                reader.readAsDataURL(f)
+            }
+
+            // 使用对象URL来显示图片
+            let fileList = document.getElementById("iframePage")
+            var list = document.createElement("ul")
+            fileList.appendChild(list);
+            for (var i = 0; i < files.length; i++) {
+                var li = document.createElement("li");
+                list.appendChild(li);
+                var img = document.createElement("img");
+                img.src = window.URL.createObjectURL(files[i]);
+                img.height = 60;
+                img.onload = function () {
+                    window.URL.revokeObjectURL(this.src);
+                }
+                li.appendChild(img);
+                var info = document.createElement("span");
+                info.innerHTML = files[i].name + ": " + files[i].size + " bytes";
+                li.appendChild(info);
+            }
+        }
+
+        function sendFile () {
+            console.log('sendFile')
+            const selectedFile = document.getElementById('fileItem').files[0]
+            console.log('selectedFile', selectedFile)
+
+            send({
+                type: 'file',
+                value: {
+                    name: selectedFile.name,
+                    size: selectedFile.size,
+                    type: selectedFile.type,
+                    file: selectedFile
+                }
+            })
+        }
+
+        // 拖拽事件
+        function dragenter(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        function dragover(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        function drop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            var dt = e.dataTransfer;
+            var files = dt.files;
+
+            handleFiles(files);
         }
     </script>
 </body>
